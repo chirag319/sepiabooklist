@@ -1,52 +1,69 @@
-import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:sepiabooklist/core/entity/Booklist.dart';
+import 'package:sepiabooklist/core/utils/utility.dart';
 import 'package:sepiabooklist/feature/view_book_detail.dart';
+import 'package:sepiabooklist/feature/view_book_home.dart';
+import 'package:sepiabooklist/generated/l10n.dart';
 
-class ViewBookListPage extends StatefulWidget {
-  const ViewBookListPage({super.key});
-
-  @override
-  State<ViewBookListPage> createState() => _ViewBookListPageState();
-}
-
-class _ViewBookListPageState extends State<ViewBookListPage> {
+class ViewBookListPageState extends State<ViewBookHomePage> {
   List<Booklist> booklist = [];
-
+  final _itemFetcher = ItemFetcher();
+  bool _isLoading = true;
+  bool _hasMore = true;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    getBookList();
+    _isLoading = true;
+    _hasMore = true;
+    _loadMore();
   }
 
-  getBookList() async {
-    List<Booklist> lists = [];
-    final String response =
-        await rootBundle.loadString('assets/json/books.json');
-    final data = await json.decode(response);
-    List items = data;
-    lists = items.map((val) => Booklist.fromJson(val)).toList();
-    setState(() {
-      booklist = lists;
+  /// Triggers fecth() and then add new items or change _hasMore flag
+  void _loadMore() {
+    _isLoading = true;
+    _itemFetcher.fetch().then((List<Booklist> fetchedList) {
+      if (fetchedList.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _hasMore = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          booklist.addAll(fetchedList);
+        });
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    print("booklist = ${booklist.length}");
     return Scaffold(
       appBar: AppBar(
-        title: Text('Book List'),
+        title: Text(S.current.book_list),
       ),
       body: ListView.separated(
-        itemCount: booklist.length,
+        itemCount: _hasMore ? booklist.length + 1 : booklist.length,
         separatorBuilder: (BuildContext context, int index) => const SizedBox(
           height: 20,
         ),
         itemBuilder: (BuildContext context, int index) {
+          if (index >= booklist.length) {
+            /// Don't trigger if one async loading is already under way
+            if (!_isLoading) {
+              _loadMore();
+            }
+            return const Center(
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
           return GestureDetector(
             onTap: (){
               Navigator.push(
@@ -63,15 +80,20 @@ class _ViewBookListPageState extends State<ViewBookListPage> {
                   maxWidth: 64,
                   maxHeight: 64,
                 ),
-                child: booklist[index].thumbnailUrl != null ? ClipRRect(
-                  borderRadius: const BorderRadius.all(Radius.circular(10)),
-                  child: Image.network(
-                    booklist[index].thumbnailUrl!,
-                    height: double.infinity,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+                child: CachedNetworkImage(
+                  height: double.infinity,
+                  width: double.infinity,
+                  imageUrl: booklist[index].thumbnailUrl??"",
+                  fit: BoxFit.fill,
+                  placeholder: (context, url) => const Center(
+                    child: SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(),
+                    ),
                   ),
-                ):const SizedBox(),
+                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                ),
               ),
               title: Text(booklist[index].title != null ? booklist[index].title! : ""),
               subtitle: Text(booklist[index].shortDescription != null ? booklist[index].shortDescription! : ""),

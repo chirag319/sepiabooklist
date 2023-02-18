@@ -1,40 +1,17 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:sepiabooklist/core/entity/Booklist.dart';
+import 'package:sepiabooklist/generated/l10n.dart';
 
-class ViewBookDetailPage extends StatefulWidget {
-  const ViewBookDetailPage({super.key,required this.booklist});
+class ViewBookDetailPage extends StatelessWidget {
+  ViewBookDetailPage({super.key,required this.booklist});
   final Booklist booklist;
-
-  @override
-  State<ViewBookDetailPage> createState() => _ViewBookDetailPageState();
-}
-
-class _ViewBookDetailPageState extends State<ViewBookDetailPage> {
-  List<String> titles = ["Title","Author","Page Count","ISBN","Published Date","Status","Categories","Description"];
-  List<dynamic> desc = [];
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    desc.add(widget.booklist.title ?? "",);
-    desc.add(widget.booklist.authors ?? "",);
-    desc.add(widget.booklist.pageCount ?? "",);
-    desc.add(widget.booklist.isbn ?? "",);
-    desc.add(widget.booklist.publishedDate ?? "",);
-    desc.add(widget.booklist.status ?? "",);
-    desc.add(widget.booklist.categories ?? "",);
-    desc.add(widget.booklist.longDescription ?? "",);
-  }
-
+  final List<String> titles = [S.current.title,S.current.author,S.current.page_count,S.current.isbn,S.current.publ_date,S.current.status,S.current.categories,S.current.description];
   @override
   Widget build(BuildContext context) {
+    List<dynamic> desc = getBookDetailsData(booklist);
     return Scaffold(
       appBar: AppBar(
-        title: Text('Book Details'),
+        title: Text(S.current.book_details),
       ),
       body: ListView.separated(
         itemCount: titles.length,
@@ -46,17 +23,32 @@ class _ViewBookDetailPageState extends State<ViewBookDetailPage> {
           descString = descString.replaceAll("[", "");
           descString = descString.replaceAll("]", "");
           return ListTile(
-            title: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              direction: Axis.horizontal,
-              children: [
-                Text("${titles[index]}: ",style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold,color: Colors.black),),
-                Text(descString,style: Theme.of(context).textTheme.bodySmall,),
-              ],
-            )
+              title: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                direction: Axis.horizontal,
+                children: [
+                  Text("${titles[index]}: ",style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold,color: Colors.black),),
+                  Text(descString,style: Theme.of(context).textTheme.bodySmall,),
+                ],
+              )
           );
         },
       ),
     );
   }
+}
+
+///This will set Book Detail Data which is selected from list
+List<dynamic> getBookDetailsData(Booklist booklist) {
+  List<dynamic> desc = [];
+  desc.add(booklist.title ?? "",);
+  desc.add(booklist.authors ?? "",);
+  desc.add(booklist.pageCount ?? "",);
+  desc.add(booklist.isbn ?? "",);
+  desc.add(booklist.publishedDate ?? "",);
+  desc.add(booklist.status ?? "",);
+  desc.add(booklist.categories ?? "",);
+  desc.add(booklist.longDescription ?? "",);
+
+  return desc;
 }
